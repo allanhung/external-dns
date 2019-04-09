@@ -1,0 +1,173 @@
+--- a/main.go	2019-04-09 20:36:14.922332760 +0200
++++ b/main.go	2019-04-09 20:30:31.182970805 +0200
+@@ -234,6 +234,7 @@
+ 		Registry: r,
+ 		Policy:   policy,
+ 		Interval: cfg.Interval,
++                NetFilter: cfg.NetFilter,
+ 	}
+ 
+ 	if cfg.Once {
+--- a/pkg/apis/externaldns/types.go	2019-04-09 20:36:14.922332760 +0200
++++ b/pkg/apis/externaldns/types.go	2019-04-09 20:28:43.103342314 +0200
+@@ -113,6 +113,7 @@
+ 	RFC2136TSIGSecret           string `secure:"yes"`
+ 	RFC2136TSIGSecretAlg        string
+ 	RFC2136TAXFR                bool
++	NetFilter                   string
+ }
+ 
+ var defaultConfig = &Config{
+@@ -186,6 +187,7 @@
+ 	RFC2136TSIGSecret:           "",
+ 	RFC2136TSIGSecretAlg:        "",
+ 	RFC2136TAXFR:                true,
++	NetFilter:                   "",
+ }
+ 
+ // NewConfig returns new Config object
+@@ -310,6 +312,7 @@
+ 
+ 	// Flags related to policies
+ 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
++	app.Flag("net-filter", "When using the RFC2136 provider, specify the net-filter to limit dns A record").Default(defaultConfig.NetFilter).StringVar(&cfg.NetFilter)
+ 
+ 	// Flags related to the registry
+ 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")
+--- a/controller/controller.go	2019-04-09 20:36:14.921332736 +0200
++++ b/controller/controller.go	2019-04-09 20:30:11.631495656 +0200
+@@ -78,6 +78,7 @@
+ 	Policy plan.Policy
+ 	// The interval between individual synchronizations
+ 	Interval time.Duration
++        NetFilter string
+ }
+ 
+ // RunOnce runs a single iteration of a reconciliation loop.
+@@ -100,6 +101,7 @@
+ 		Policies: []plan.Policy{c.Policy},
+ 		Current:  records,
+ 		Desired:  endpoints,
++                NetFilter: c.NetFilter,
+ 	}
+ 
+ 	plan = plan.Calculate()
+--- a/plan/plan.go	2019-04-09 20:36:14.922332760 +0200
++++ b/plan/plan.go	2019-04-09 20:34:01.102077247 +0200
+@@ -18,7 +18,9 @@
+ 
+ import (
+ 	"fmt"
++	"net"
+ 	"strings"
++	log "github.com/sirupsen/logrus"
+ 
+ 	"github.com/allanhung/external-dns/endpoint"
+ )
+@@ -35,6 +37,7 @@
+ 	// List of changes necessary to move towards desired state
+ 	// Populated after calling Calculate()
+ 	Changes *Changes
++	NetFilter string
+ }
+ 
+ // Changes holds lists of actions to be executed by dns providers
+@@ -85,10 +88,12 @@
+ 
+ func (t planTable) addCurrent(e *endpoint.Endpoint) {
+ 	dnsName := normalizeDNSName(e.DNSName)
+-	if _, ok := t.rows[dnsName]; !ok {
++	if _, ok := t.rows[dnsName]; ok {
++		t.rows[dnsName].current.Targets = unique(append(t.rows[dnsName].current.Targets, e.Targets...))
++	} else {
+ 		t.rows[dnsName] = &planTableRow{}
++		t.rows[dnsName].current = e
+ 	}
+-	t.rows[dnsName].current = e
+ }
+ 
+ func (t planTable) addCandidate(e *endpoint.Endpoint) {
+@@ -103,7 +108,8 @@
+ func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
+ 	for _, row := range t.rows {
+ 		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
+-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
++			// update := t.resolver.ResolveUpdate(row.current, row.candidates)
++                        update := combindEndpoint(row.candidates)
+ 			// compare "update" to "current" to figure out if actual update is required
+ 			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
+ 				inheritOwner(row.current, update)
+@@ -140,10 +146,10 @@
+ func (p *Plan) Calculate() *Plan {
+ 	t := newPlanTable()
+ 
+-	for _, current := range filterRecordsForPlan(p.Current) {
++	for _, current := range filterRecordsForPlan(p.Current, "") {
+ 		t.addCurrent(current)
+ 	}
+-	for _, desired := range filterRecordsForPlan(p.Desired) {
++	for _, desired := range filterRecordsForPlan(p.Desired, p.NetFilter) {
+ 		t.addCandidate(desired)
+ 	}
+ 
+@@ -213,7 +219,7 @@
+ // Per RFC 1034, CNAME records conflict with all other records - it is the
+ // only record with this property. The behavior of the planner may need to be
+ // made more sophisticated to codify this.
+-func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
++func filterRecordsForPlan(records []*endpoint.Endpoint, netFilter string) []*endpoint.Endpoint {
+ 	filtered := []*endpoint.Endpoint{}
+ 
+ 	for _, record := range records {
+@@ -221,6 +227,22 @@
+ 		// TODO: Add AAAA records as well when they are supported.
+ 		switch record.RecordType {
+ 		case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
++			if netFilter != "" {
++				 _, netA, err := net.ParseCIDR(netFilter)
++ 				if err != nil {
++					log.Fatal(err)
++				}
++				for i := len(record.Targets)-1; i >= 0; i-- {
++					addr := net.ParseIP(record.Targets[i])
++					if addr == nil {
++						log.Fatal("Invalid address: %s", record.Targets[i])
++					} 
++					if !netA.Contains(addr) {
++						log.Debugf("Skipping record %s because it was filtered out by the specified --net-filter", record.Targets[i])
++						record.Targets = append(record.Targets[:i], record.Targets[i+1:]...)
++					}
++				}
++			}
+ 			filtered = append(filtered, record)
+ 		default:
+ 			continue
+@@ -239,3 +261,28 @@
+ 	}
+ 	return s
+ }
++
++func unique(strSlice []string) []string {
++	keys := make(map[string]bool)
++	list := []string{} 
++	for _, entry := range strSlice {
++		if _, value := keys[entry]; !value {
++			keys[entry] = true
++			list = append(list, entry)
++		}
++	}    
++	return list
++}
++
++func combindEndpoint(desired []*endpoint.Endpoint) *endpoint.Endpoint {
++	var combind *endpoint.Endpoint
++
++	for i, ep := range desired {
++		if i == 0 {
++			combind	= ep
++		} else {
++			combind.Targets = unique(append(combind.Targets, ep.Targets...))
++		}
++	}
++	return combind
++}

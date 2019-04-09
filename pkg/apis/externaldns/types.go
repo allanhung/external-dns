@@ -113,6 +113,7 @@ type Config struct {
 	RFC2136TSIGSecret           string `secure:"yes"`
 	RFC2136TSIGSecretAlg        string
 	RFC2136TAXFR                bool
+	NetFilter                   string
 }
 
 var defaultConfig = &Config{
@@ -186,6 +187,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecret:           "",
 	RFC2136TSIGSecretAlg:        "",
 	RFC2136TAXFR:                true,
+	NetFilter:                   "",
 }
 
 // NewConfig returns new Config object
@@ -310,6 +312,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only")
+	app.Flag("net-filter", "When using the RFC2136 provider, specify the net-filter to limit dns A record").Default(defaultConfig.NetFilter).StringVar(&cfg.NetFilter)
 
 	// Flags related to the registry
 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")

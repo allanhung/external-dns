@@ -78,6 +78,7 @@ type Controller struct {
 	Policy plan.Policy
 	// The interval between individual synchronizations
 	Interval time.Duration
+        NetFilter string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -100,6 +101,7 @@ func (c *Controller) RunOnce() error {
 		Policies: []plan.Policy{c.Policy},
 		Current:  records,
 		Desired:  endpoints,
+                NetFilter: c.NetFilter,
 	}
 
 	plan = plan.Calculate()

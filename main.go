@@ -234,6 +234,7 @@ func main() {
 		Registry: r,
 		Policy:   policy,
 		Interval: cfg.Interval,
+                NetFilter: cfg.NetFilter,
 	}
 
 	if cfg.Once {

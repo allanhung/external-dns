@@ -18,7 +18,9 @@ package plan
 
 import (
 	"fmt"
+	"net"
 	"strings"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/allanhung/external-dns/endpoint"
 )
@@ -35,6 +37,7 @@ type Plan struct {
 	// List of changes necessary to move towards desired state
 	// Populated after calling Calculate()
 	Changes *Changes
+	NetFilter string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -85,10 +88,12 @@ func (t planTableRow) String() string {
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	dnsName := normalizeDNSName(e.DNSName)
-	if _, ok := t.rows[dnsName]; !ok {
+	if _, ok := t.rows[dnsName]; ok {
+		t.rows[dnsName].current.Targets = unique(append(t.rows[dnsName].current.Targets, e.Targets...))
+	} else {
 		t.rows[dnsName] = &planTableRow{}
+		t.rows[dnsName].current = e
 	}
-	t.rows[dnsName].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
@@ -103,7 +108,8 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 func (t planTable) getUpdates() (updateNew []*endpoint.Endpoint, updateOld []*endpoint.Endpoint) {
 	for _, row := range t.rows {
 		if row.current != nil && len(row.candidates) > 0 { //dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
+			// update := t.resolver.ResolveUpdate(row.current, row.candidates)
+                        update := combindEndpoint(row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
 			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || shouldUpdateProviderSpecific(update, row.current) {
 				inheritOwner(row.current, update)
@@ -140,10 +146,10 @@ func (t planTable) getDeletes() (deleteList []*endpoint.Endpoint) {
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
 
-	for _, current := range filterRecordsForPlan(p.Current) {
+	for _, current := range filterRecordsForPlan(p.Current, "") {
 		t.addCurrent(current)
 	}
-	for _, desired := range filterRecordsForPlan(p.Desired) {
+	for _, desired := range filterRecordsForPlan(p.Desired, p.NetFilter) {
 		t.addCandidate(desired)
 	}
 
@@ -213,7 +219,7 @@ func shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, netFilter string) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
@@ -221,6 +227,22 @@ func filterRecordsForPlan(records []*endpoint.Endpoint) []*endpoint.Endpoint {
 		// TODO: Add AAAA records as well when they are supported.
 		switch record.RecordType {
 		case endpoint.RecordTypeA, endpoint.RecordTypeCNAME:
+			if netFilter != "" {
+				 _, netA, err := net.ParseCIDR(netFilter)
+ 				if err != nil {
+					log.Fatal(err)
+				}
+				for i := len(record.Targets)-1; i >= 0; i-- {
+					addr := net.ParseIP(record.Targets[i])
+					if addr == nil {
+						log.Fatal("Invalid address: %s", record.Targets[i])
+					} 
+					if !netA.Contains(addr) {
+						log.Debugf("Skipping record %s because it was filtered out by the specified --net-filter", record.Targets[i])
+						record.Targets = append(record.Targets[:i], record.Targets[i+1:]...)
+					}
+				}
+			}
 			filtered = append(filtered, record)
 		default:
 			continue
@@ -238,4 +260,29 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
+}
+
+func unique(strSlice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{} 
+	for _, entry := range strSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}    
+	return list
+}
+
+func combindEndpoint(desired []*endpoint.Endpoint) *endpoint.Endpoint {
+	var combind *endpoint.Endpoint
+
+	for i, ep := range desired {
+		if i == 0 {
+			combind	= ep
+		} else {
+			combind.Targets = unique(append(combind.Targets, ep.Targets...))
+		}
+	}
+	return combind
 }
