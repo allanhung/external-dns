@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/dnsimple/dnsimple-go/dnsimple"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
 	log "github.com/sirupsen/logrus"
 )
 

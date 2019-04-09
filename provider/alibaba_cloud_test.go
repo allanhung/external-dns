@@ -19,10 +19,10 @@ package provider
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/pvtz"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/plan"
 )
 
 type MockAlibabaCloudDNSAPI struct {

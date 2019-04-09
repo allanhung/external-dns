@@ -18,8 +18,8 @@ package provider
 
 import (
 	"fmt"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
 	rc0 "github.com/nic-at/rc0go"
 	"github.com/stretchr/testify/require"
 	"os"

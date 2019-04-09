@@ -26,8 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 )
@@ -233,7 +233,7 @@ func (p *AWSProvider) Records() (endpoints []*endpoint.Endpoint, _ error) {
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
 			// TODO(linki, ownership): Remove once ownership system is in place.
-			// See: https://github.com/kubernetes-incubator/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
+			// See: https://github.com/allanhung/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 
 			if !supportedRecordType(aws.StringValue(r.Type)) {
 				continue

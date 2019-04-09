@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/api/core/v1"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 )
 
 const (

@@ -25,9 +25,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/internal/testutils"
+	"github.com/allanhung/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

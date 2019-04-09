@@ -31,9 +31,9 @@ import (
 	"github.com/gophercloud/gophercloud/pagination"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/pkg/tlsutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/pkg/tlsutils"
+	"github.com/allanhung/external-dns/plan"
 )
 
 const (

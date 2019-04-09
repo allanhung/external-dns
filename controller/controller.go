@@ -22,9 +22,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/registry"
-	"github.com/kubernetes-incubator/external-dns/source"
+	"github.com/allanhung/external-dns/plan"
+	"github.com/allanhung/external-dns/registry"
+	"github.com/allanhung/external-dns/source"
 )
 
 var (

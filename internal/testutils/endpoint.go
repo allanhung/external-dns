@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 )
 
 /** test utility functions for endpoints verifications */

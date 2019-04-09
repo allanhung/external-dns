@@ -26,9 +26,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/internal/testutils"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/internal/testutils"
+	"github.com/allanhung/external-dns/plan"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -944,7 +944,7 @@ func TestAWSSuitableZones(t *testing.T) {
 		{"foobar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
 
 		// all matching private zones are suitable
-		// https://github.com/kubernetes-incubator/external-dns/pull/356
+		// https://github.com/allanhung/external-dns/pull/356
 		{"bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
 
 		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},

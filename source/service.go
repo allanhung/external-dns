@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 	"time"
 )
 

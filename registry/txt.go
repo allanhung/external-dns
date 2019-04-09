@@ -22,9 +22,9 @@ import (
 
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
-	"github.com/kubernetes-incubator/external-dns/provider"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
+	"github.com/allanhung/external-dns/provider"
 	log "github.com/sirupsen/logrus"
 )
 

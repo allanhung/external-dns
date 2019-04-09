@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 	"github.com/stretchr/testify/assert"
 )
 

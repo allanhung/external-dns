@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
 	"github.com/linode/linodego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

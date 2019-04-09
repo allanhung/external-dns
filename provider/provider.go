@@ -20,8 +20,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
-	"github.com/kubernetes-incubator/external-dns/plan"
+	"github.com/allanhung/external-dns/endpoint"
+	"github.com/allanhung/external-dns/plan"
 )
 
 // Provider defines the interface DNS providers should implement.

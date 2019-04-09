@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kubernetes-incubator/external-dns/endpoint"
+	"github.com/allanhung/external-dns/endpoint"
 )
 
 const (
